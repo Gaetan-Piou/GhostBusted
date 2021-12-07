@@ -1,0 +1,811 @@
+<!DOCTYPE HTML>
+
+<html lang="en">
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Ghost Busted!</title>
+		<script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
+		<style type="text/css">
+			body {
+		    	margin: 0;
+			}
+		</style>
+	</head>
+
+	<body>
+		
+		<script type="text/javascript">
+
+			
+			var config = {
+				type: Phaser.AUTO,
+				width: 1280,
+				height: 720,
+				parent: 'phaser-example',
+				physics: {
+					default: 'arcade',
+					arcade: {
+						gravity: { y: 300 },
+						debug: false
+					}
+				},
+				scene: {
+					preload: preload,
+					create: create,
+					update: update
+				}
+			};
+
+			var player;
+			var ghost;
+			var tomes;
+			var platforms;
+			var fond;
+
+			var nbChasseur = Phaser.Math.Between(2, 5);
+
+			var fantomes = [];
+			var chasseurs = [];
+			var rayons = [];
+			var hitboxRayons = [];
+
+			var fondJauge;
+			var jaugeEsprit;
+
+			var cursors;
+			var space;
+
+			var score = 0;
+			var scoreText;
+			var gameOver = false;
+			var endScreen = 0;
+
+			var ghostLife = 1000;
+			var inGhost = false;
+
+			var music;
+
+			var game = new Phaser.Game(config);
+
+			function preload () {
+				
+				//Fond lorsque le joueur est en fantome
+				this.load.image('fondFantome', 'assets/FondFantome.png');
+
+				//Tiles du sol
+				this.load.image('ground', 'assets/TileDroit.png');
+				this.load.image('groundcorner', 'assets/TileCoude.png');
+
+				//Spritesheets des livres a recuperer
+				this.load.spritesheet('livre', 'assets/Livre.png', { frameWidth: 25, frameHeight: 35});
+				this.load.spritesheet('livre2', 'assets/Livre2.png', { frameWidth: 25, frameHeight: 35});
+				this.load.spritesheet('livre3', 'assets/Livre3.png', { frameWidth: 25, frameHeight: 35});
+				this.load.spritesheet('livre4', 'assets/Livre4.png', { frameWidth: 25, frameHeight: 35});
+				this.load.spritesheet('livre5', 'assets/Livre5.png', { frameWidth: 25, frameHeight: 35});
+
+				//Spritesheets des fantomes
+				this.load.spritesheet('fantomeNormal', 'assets/FantomeNormal.png', { frameWidth: 48, frameHeight: 48});
+
+
+				//Spritesheets des chasseurs de fantomes
+				this.load.image('chasseur', 'assets/Chasseur.png');
+				this.load.spritesheet('rayon', 'assets/Rayon.png', {frameWidth: 192, frameHeight: 16});
+
+				//Spritesheets du medium et de son fantome
+				this.load.spritesheet('medium', 'assets/mediumSprite.png', { frameWidth: 40, frameHeight: 79 });
+				this.load.spritesheet('fantomeMedium', 'assets/FantomeMedium.png', {frameWidth: 48, frameHeight: 48});
+
+				//Images de la jauge d'esprit
+				this.load.image('fondJauge', 'assets/FondJauge.png');
+				this.load.image('jaugeEsprit', 'assets/JaugeEsprit.png');
+
+				//Musique de fond
+				this.load.audio('music', 'assets/toybox.ogg');
+			}
+
+
+
+
+
+
+
+
+
+
+
+
+
+			function create () {
+			
+				//  The platforms group contains the ground and the 2 ledges we can jump on
+				platforms = this.physics.add.staticGroup();
+
+			
+				for(i=0; i<30; i++) {
+					positionX = 32 * 0.75 + i * (64 * 0.75);
+					positionY = 700
+					platforms.create(positionX, positionY, 'ground').setScale(0.75).refreshBody();
+				}
+
+				
+				
+
+				positionX = 1056 + 16
+				positionY = 450
+
+				platforms.create(positionX, positionY, 'groundcorner').setScale(0.5).refreshBody().setAngle(90);
+				platforms.create(positionX, positionY+32, 'groundcorner').setScale(0.5).refreshBody().setAngle(180);
+
+
+				for(i=0; i<5; i++) {
+					positionX = 1056 - 16 - i * (64 * 0.5);
+					positionY = 450
+					platforms.create(positionX, positionY, 'ground').setScale(0.5).refreshBody();
+					platforms.create(positionX, positionY+32, 'ground').setScale(0.5).refreshBody().setAngle(180);
+				}
+
+
+				platforms.create(positionX-32, positionY, 'groundcorner').setScale(0.5).refreshBody();
+				platforms.create(positionX-32, positionY+32, 'groundcorner').setScale(0.5).refreshBody().setAngle(-90);
+
+
+
+				positionX = 224 - 16
+				positionY = 450
+
+				platforms.create(positionX, positionY, 'groundcorner').setScale(0.5).refreshBody();
+				platforms.create(positionX, positionY+32, 'groundcorner').setScale(0.5).refreshBody().setAngle(-90);
+
+
+				for(i=0; i<5; i++) {
+					positionX = 224 + 16 + i * (64 * 0.5);
+					positionY = 450
+					platforms.create(positionX, positionY, 'ground').setScale(0.5).refreshBody();
+					platforms.create(positionX, positionY+32, 'ground').setScale(0.5).refreshBody().setAngle(180);
+				}
+
+
+				platforms.create(positionX+32, positionY, 'groundcorner').setScale(0.5).refreshBody().setAngle(90);
+				platforms.create(positionX+32, positionY+32, 'groundcorner').setScale(0.5).refreshBody().setAngle(180);
+
+
+				
+
+				positionX = 560 + 16
+				positionY = 235
+
+				platforms.create(positionX-32, positionY, 'groundcorner').setScale(0.5).refreshBody();
+				platforms.create(positionX-32, positionY+32, 'groundcorner').setScale(0.5).refreshBody().setAngle(-90);
+
+
+				for(i=0; i<5; i++) {
+					positionX = 560 + 16 + i * 32;
+					positionY = 235
+					platforms.create(positionX, positionY, 'ground').setScale(0.5).refreshBody();
+					platforms.create(positionX, positionY+32, 'ground').setScale(0.5).refreshBody().setAngle(180);
+				}
+
+				platforms.create(positionX+32, positionY, 'groundcorner').setScale(0.5).refreshBody().setAngle(90);
+				platforms.create(positionX+32, positionY+32, 'groundcorner').setScale(0.5).refreshBody().setAngle(180);
+	
+
+
+
+
+
+				//Creation du joueur
+				player = this.physics.add.sprite(100, 600, 'medium', 6).setScale(0.8);
+				//Creation du fantome du joueur
+				ghost = this.physics.add.sprite(-1000, 0, 'fantomeMedium', 0);
+			
+				//Proprietes physiques du joueur
+				player.setBounce(0.1);
+				player.setCollideWorldBounds(true);
+			
+
+				//Creation de la jauge d'esprit du joueur
+				cadreJauge = this.add.image(50, 225, 'fondJauge').setOrigin(0.5, 1);
+				cadreJauge.displayHeight = 160;
+				cadreJauge.setDepth(5);
+
+				jaugeEsprit = this.add.image(50, 220, 'jaugeEsprit').setOrigin(0.5, 1);
+				jaugeEsprit.displayHeight = 150;
+				jaugeEsprit.displayWidth = 20;
+				jaugeEsprit.setDepth(6);
+
+				fondJauge = this.add.image(50, 220, 'jaugeEsprit').setOrigin(0.5, 1);
+				fondJauge.displayHeight = 150;
+				fondJauge.displayWidth = 20;
+				fondJauge.setDepth(5);
+				fondJauge.setTint('0x000000')
+
+
+				
+				//Animations du joueur
+				this.anims.create({
+					key: 'left',
+					frames: this.anims.generateFrameNumbers('medium', { start: 0, end: 5 }),
+					frameRate: 10,
+					repeat: -1
+				});
+			
+				this.anims.create({
+					key: 'idleLeft',
+					frames: [ { key: 'medium', frame: 5 } ],
+					frameRate: 24
+				});
+			
+				this.anims.create({
+					key: 'right',
+					frames: this.anims.generateFrameNumbers('medium', { start: 6, end: 11 }),
+					frameRate: 10,
+					repeat: -1
+				});
+
+				this.anims.create({
+					key: 'idleRight',
+					frames: [ { key: 'medium', frame: 6}],
+					frameRate: 24
+				});
+
+
+
+				//Animation du fantome du joueur
+				this.anims.create({
+					key: 'fantomeGauche',
+					frames: this.anims.generateFrameNumbers('fantomeMedium', {start: 0, end: 1}),
+					frameRate: 5,
+					repeat: -1
+				});
+
+				this.anims.create({
+					key: 'fantomeDroite',
+					frames: this.anims.generateFrameNumbers('fantomeMedium', {start: 2, end: 3}),
+					frameRate: 5,
+					repeat: -1
+				});
+			
+
+
+
+				//  Input Events
+				cursors = this.input.keyboard.createCursorKeys();
+
+
+
+				//Animations des fantomes
+				this.anims.create({
+					key: 'fantomeNormalGauche',
+					frames: this.anims.generateFrameNumbers('fantomeNormal', {start: 0, end: 1}),
+					frameRate: 5,
+					repeat: -1
+				});
+
+				this.anims.create({
+					key: 'fantomeNormalDroite',
+					frames: this.anims.generateFrameNumbers('fantomeNormal', {start: 2, end: 3}),
+					frameRate: 5,
+					repeat: -1
+				});
+			
+
+				//Animations des livres recuperables
+				this.anims.create({
+					key: 'livreMagique1',
+					frames: this.anims.generateFrameNumbers('livre', {start: 0, end: 3}),
+					frameRate: 7,
+					repeat: -1
+				});
+
+				this.anims.create({
+					key: 'livreMagique2',
+					frames: this.anims.generateFrameNumbers('livre2', {start: 0, end: 3}),
+					frameRate: 7,
+					repeat: -1
+				});
+
+				this.anims.create({
+					key: 'livreMagique3',
+					frames: this.anims.generateFrameNumbers('livre3', {start: 0, end: 3}),
+					frameRate: 7,
+					repeat: -1
+				});
+
+				this.anims.create({
+					key: 'livreMagique4',
+					frames: this.anims.generateFrameNumbers('livre4', {start: 0, end: 3}),
+					frameRate: 7,
+					repeat: -1
+				});
+
+				this.anims.create({
+					key: 'livreMagique5',
+					frames: this.anims.generateFrameNumbers('livre5', {start: 0, end: 3}),
+					frameRate: 7,
+					repeat: -1
+				});
+
+
+				//Le tome a recuperer
+				tomes = this.physics.add.sprite(Phaser.Math.Between(640, 1240), Phaser.Math.Between(150, 600), 'livre', 6);
+
+
+
+
+
+				this.anims.create({
+					key: 'rayonChasseur',
+					frames: this.anims.generateFrameNumbers('rayon', {start: 0, end: 3}),
+					frameRate: 12,
+					repeat: -1
+				})
+
+
+
+
+
+				for(i=0; i<nbChasseur; i++) {
+					var x = Phaser.Math.Between(80, 1200);
+					var y = Phaser.Math.Between(80, 600);
+					var angle = Phaser.Math.Between(0, 360);
+
+					chasseurs.push(this.physics.add.image(x, y, 'chasseur'));
+					rayons.push(this.physics.add.sprite(x, y, 'rayon', 0).setOrigin(-0.05, 0.5).setAngle(angle));
+
+					chasseurs[i].body.setAllowGravity(false);
+					rayons[i].body.setAllowGravity(false);
+					rayons[i].anims.play('rayonChasseur', true);
+					chasseurs[i].alpha = 0.5;
+					rayons[i].alpha = 0;
+
+					chasseurs[i].setDepth(-1);
+					rayons[i].setDepth(-1);
+
+					for(j=0; j<3; j++) {
+						xHit = Math.cos(angle * Math.PI / 180) * 64 * (j + 1);
+						yHit = Math.sin(angle * Math.PI / 180) * 64 * (j + 1);
+						hitboxRayons.push(this.physics.add.image(x + xHit, y + yHit, 'fondJauge').setScale(2))
+						hitboxRayons[i*3 + j].body.setAllowGravity(false);
+						hitboxRayons[i*3 + j].alpha = 0;
+						this.physics.add.overlap(ghost, hitboxRayons[i*3 + j], hurtGhost, null, this);
+					}
+				}
+
+
+
+			
+			
+				//Affichage du score dans l'interface
+				scoreText = this.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#FFF'});
+
+			
+				//Collision du joueur avec la plateforme (avec reinitialisation du multiplicateur de score)
+				this.physics.add.collider(player, platforms, resetMultiplyer, null, this);
+				//Collision entre le tome et la plateforme et changement de la position du tome en consequence
+				this.physics.add.collider(tomes, platforms, changeTomePosition, null, this);
+				
+			
+				//Collision entre le joueur et le tome avec l'augmentation du score et du multiplicateur
+				this.physics.add.overlap(player, tomes, collectTome, null, this);
+				//Collision entre le fantome du joueur et son corps pour lui redonner vie
+				this.physics.add.overlap(ghost, player, retrieveBody, null, this);
+				
+
+				player.anims.play('idleRight');
+				scoreMultiplyer = 1;
+
+				music = this.sound.add('music', {volume: 0.5});
+				music.loop = true;
+				music.play();
+
+
+			}
+
+
+
+
+
+
+			function update () {
+
+				for(var i=0; i<fantomes.length; i++) {
+					if(fantomes[i] != undefined) {
+						animFantome(fantomes[i]);
+					} else {
+						delete fantomes[i];
+					}
+				}
+
+				for(i=0; i<chasseurs.length; i++) {
+					if(i%2 == 0) {
+						rayons[i].angle += 1;
+					} else {
+						rayons[i].angle -= 1;
+					}
+
+					if(!inGhost) {
+						rayons[i].alpha = 0;
+					}
+
+					for(j=0; j<3; j++) {
+						xHit = Math.cos(rayons[i].angle * Math.PI / 180) * 64 * (j + 1);
+						yHit = Math.sin(rayons[i].angle * Math.PI / 180) * 64 * (j + 1);
+						//hitboxRayons.push(this.physics.add.image(x + xHit, y + yHit, 'fondJauge'))
+						//hitboxRayons[i*3 + j].body.setAllowGravity(false);
+
+						hitboxRayons[i*3 + j].setX(rayons[i].x + xHit);
+						hitboxRayons[i*3 + j].setY(rayons[i].y + yHit);
+					}
+				}
+
+				switch(scoreMultiplyer) {
+					case 1:
+						tomes.anims.play('livreMagique1', true);
+						break;
+					case 1.5:
+						tomes.anims.play('livreMagique2', true);
+						break;
+					case 2:
+						tomes.anims.play('livreMagique3', true);
+						break;
+					case 2.5:
+						tomes.anims.play('livreMagique4', true);
+						break;
+					case 3:
+						tomes.anims.play('livreMagique5', true);
+						break;
+
+				}
+
+				jaugeEsprit.displayHeight = Math.max(0, ghostLife / 1000 * 150);
+
+				tomes.setVelocityY(-5);
+
+				if (!gameOver && !inGhost) {
+					if(fond != undefined) {
+						if(fond.alpha > 0) {
+							fond.alpha -= 0.05;
+						} else {
+							ghost.setScale(1);
+							ghost.setX(-5000)
+						}
+					}			
+
+					controleMedium();
+
+				//Lorsque le fantome du joueur a disparu
+				} else if(gameOver) {
+
+					if(endScreen == 0) {
+						endScreen = this.add.text(360, 280, 'Game over\nYour Score : ' + score, { fontSize: '64px', fill: '#FFF', align: 'center'});
+						endScreen.setDepth(5)
+					}
+
+
+				//Lorsque le joueur est en fantome	
+				} else {
+					controleFantome();
+				}
+			}
+
+
+		
+
+
+			function controleMedium() {
+				if (cursors.left.isDown) {
+					player.setVelocityX(Math.max(player.body.velocity.x - 30, -250));
+				
+					player.anims.play('left', true);
+				}
+				else if (cursors.right.isDown) {
+					player.setVelocityX(Math.min(player.body.velocity.x + 30, 250));
+				
+					player.anims.play('right', true);
+				}
+				else {
+					if(player.body.velocity.x > 0) {
+						player.anims.play('idleRight', true);
+						player.setVelocityX(Math.max(0, player.body.velocity.x - 30));
+					} else if(player.body.velocity.x < 0) {
+						player.anims.play('idleLeft', true);
+						player.setVelocityX(Math.min(0, player.body.velocity.x + 30));
+					}
+
+				}
+				
+				if (cursors.up.isDown) {
+					if(player.body.touching.down) {
+						player.setVelocityY(-420);
+
+					} else {
+						player.setVelocityY(Math.min(player.body.velocity.y-0.5, 75));
+
+						if(player.body.velocity.y > 0) {
+							if(cursors.right.isDown) {
+								player.setVelocityX(Math.min(player.body.velocity.x + 10, 200));
+							} else if (cursors.left.isDown) {
+								player.setVelocityX(Math.max(player.body.velocity.x - 10, -200));
+							} else {
+								if(player.body.velocity.x > 0) {
+									player.anims.play('idleRight', true);
+									player.setVelocityX(Math.max(0, player.body.velocity.x - 10));
+								} else if(player.body.velocity.x < 0) {
+									player.anims.play('idleLeft', true);
+									player.setVelocityX(Math.min(0, player.body.velocity.x + 10));
+								}
+							}
+						}
+
+					}						
+				} else {
+					if(!player.body.touching.down) {
+						player.setVelocityY(Math.min(player.body.velocity.y + 10, 400));
+					}
+				}
+			}
+
+
+
+			function controleFantome() {
+				//Arret du joueur
+				if(player.body.velocity.x > 0) {
+					player.anims.play('idleRight', true);
+					player.setVelocityX(Math.max(0, player.body.velocity.x - 5));
+				} else if(player.body.velocity.x < 0) {
+					player.anims.play('idleLeft', true);
+					player.setVelocityX(Math.min(0, player.body.velocity.x + 5));
+				}
+
+
+				//Fondu du fond noir
+				if(fond.alpha < 1) {
+					fond.alpha += 0.02;
+					ghost.alpha = 1;
+				} else {
+
+					ghostLife -= 1;
+					ghost.alpha = ghostLife / 750;
+					if(ghostLife <= 0) {
+						ghost.disableBody(true, true);
+						gameOver = true;
+						fond.destroy();
+					}
+				}
+
+
+
+				//Controles du fantome
+				if(cursors.up.isDown) {
+					ghost.setVelocityY(-200);
+				} else if(cursors.down.isDown) {
+					ghost.setVelocityY(200);
+				} else {
+					ghost.setVelocityY(-5);
+				}
+
+				if(cursors.left.isDown) {
+					ghost.setVelocityX(-200);
+					ghost.anims.play('fantomeGauche', true);
+				} else if(cursors.right.isDown) {
+					ghost.setVelocityX(200);
+					ghost.anims.play('fantomeDroite', true);
+				} else {
+					ghost.setVelocityX(0);
+				}
+
+								
+			}
+
+			
+
+
+
+			function collectTome (player, tome) {
+			
+				if(!inGhost) {
+					//Augmenter le score et le multiplicateur
+					score += 100 * scoreMultiplyer;
+					ghostLife = Math.min(1000, ghostLife + (scoreMultiplyer - 1) * 50);
+
+					if(scoreMultiplyer < 3) {
+						scoreMultiplyer += 0.5;
+					}
+
+					//Mis a jour du score dans l'interface
+					scoreText.setText('Score: ' + score);
+					
+					
+					//Definition d'une nouvelle position pour le prochain tome
+					tome.setX(Phaser.Math.Between(120, 1240));
+					tome.setY(Phaser.Math.Between(150, 600));
+					
+			
+					var x = (player.x < 640) ? Phaser.Math.Between(640, 1280) : Phaser.Math.Between(0, 640);
+			
+					var fantome = this.physics.add.sprite(x, 16, 'fantomeNormal', 0).setScale(0.75);
+					fantome.setBounce(1);
+					fantome.setCollideWorldBounds(true);
+					do {
+						var velocityX = Phaser.Math.Between(-200, 200);
+					} while(velocityX < 100 && velocityX > -100);
+					fantome.setVelocity(velocityX, 20);
+					fantome.anims.play('fantomeNormalGauche');
+
+					fantome.allowGravity = false;
+					this.physics.add.collider(fantome, platforms);
+					this.physics.add.overlap(player, fantome, hitFantome, null, this);
+					this.physics.add.overlap(ghost, fantome, destroyFantome, null, this);
+
+
+					fantomes.push(fantome);
+
+
+					player.setVelocityY(-420);
+				}
+
+			
+			}
+
+
+
+
+
+
+
+
+
+			function hitFantome (player, fantome) {
+			
+				if(!inGhost && fantome.alpha == 1 && (fond === undefined || fond == 0 || fond.alpha <= 0)) {
+					player.setTint(0xff0000);			
+					inGhost = true;
+					scoreMultiplyer = 1;
+
+
+					//Creation du fantome
+					ghost.body.x = (player.x < 640) ? Phaser.Math.Between(790, 1200) : Phaser.Math.Between(80, 490);
+					ghost.body.y = Phaser.Math.Between(50, 600);
+					
+
+					if(ghost.body.x < 640) {
+						ghost.anims.play('fantomeDroite');
+					} else {
+						ghost.anims.play('fantomeGauche');
+					}
+
+					ghost.setScale(1);
+					ghost.setVelocityY(0);
+					ghost.setCollideWorldBounds(true);
+
+
+					//Creation du fond noir du mode fantome
+					if(fond === undefined || fond == 0) {
+						fond = this.add.image(640, 360, 'fondFantome');
+					}
+					//fond.setDepth(0);
+					fond.alpha = 0;
+					fond.setDepth(1);
+
+					ghost.setDepth(2);
+					player.setDepth(2);
+					scoreText.setDepth(3);
+					
+					for(i=0; i<rayons.length; i++) {
+						rayons[i].setDepth(2);
+						rayons[i].alpha = 1
+					}
+
+				}
+			}
+
+
+			function destroyFantome(ghost, fantome) {
+				
+				if(fantome.alpha == 1) {
+					fantome.alpha = 0.99;
+					//fantome.body.moves = false;
+					fantome.setDepth(3);
+					//fantome.destroy();
+
+					if(inGhost) {
+						score += 10;
+						scoreText.setText('Score: ' + score);
+					}
+				}
+			}
+
+
+			function retrieveBody(ghost, player) {
+				ghost.setScale(5);
+				ghost.alpha = 0;
+				ghost.setVelocityX(0);
+				ghost.setVelocityY(-5);
+				this.physics.pause();
+
+				this.physics.resume();
+				inGhost = false;
+				player.setTint(0xffffff);
+				ghost.setCollideWorldBounds(false);
+			}
+
+
+
+
+
+			function hurtGhost(ghost, rayon) {
+				if(inGhost && fond.alpha >= 1) {
+					ghostLife -= 4;
+				}
+			}
+
+
+
+
+
+
+
+
+
+			function resetMultiplyer (player, platforms) {
+				if(player.body.touching.down) {
+					scoreMultiplyer = 1;
+				}
+			}
+
+
+			function changeTomePosition (tome, platforms) {
+				tome.setX(Phaser.Math.Between(50, 1240))
+				tome.setY(Phaser.Math.Between(150, 600));
+			}
+
+
+
+			function animFantome (fantome) {
+				if(fantome.body.velocity.x > 0) {
+					fantome.anims.play('fantomeNormalDroite', true);
+				} else {
+					fantome.anims.play('fantomeNormalGauche', true);
+				}
+
+				if(fantome.alpha < 1) {
+					fantome.alpha -= 0.05;
+					if (fantome.alpha <= 0) {
+						fantome.disableBody(true, true);
+					}
+				} else {
+					fantome.setDepth(0);
+				}	
+			}
+
+
+
+
+			function angleRayon(rayon) {
+				if(i%2 == 0) {
+					rayon.angle += 1;
+				} else {
+					rayon.angle -= 1;
+				}
+
+				if(!inGhost) {
+					rayon.alpha = 0;
+				}
+
+				for(j=0; j<3; j++) {
+					xHit = Math.cos(rayon.angle) * 64 * (j + 1);
+					yHit = Math.sin(rayon.angle) * 64 * (j + 1);
+					//hitboxRayons.push(this.physics.add.image(x + xHit, y + yHit, 'fondJauge'))
+					//hitboxRayons[i*3 + j].body.setAllowGravity(false);
+
+					hitboxRayons[i*3 + j].setX(rayon.x + xHit);
+					hitboxRayons[i*3 + j].setY(rayon.y + yHit);
+				}
+			}
+
+
+		</script>
+
+	</body>
+
+</html>
