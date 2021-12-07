@@ -117,10 +117,11 @@
 
 			function create () {
 			
-				//  The platforms group contains the ground and the 2 ledges we can jump on
+				//Plateformes du niveau
 				platforms = this.physics.add.staticGroup();
 
 			
+				//Plateforme du bas
 				for(i=0; i<30; i++) {
 					positionX = 32 * 0.75 + i * (64 * 0.75);
 					positionY = 700
@@ -129,7 +130,7 @@
 
 				
 				
-
+				//Plateforme droite
 				positionX = 1056 + 16
 				positionY = 450
 
@@ -149,7 +150,7 @@
 				platforms.create(positionX-32, positionY+32, 'groundcorner').setScale(0.5).refreshBody().setAngle(-90);
 
 
-
+				//Plateforme gauche
 				positionX = 224 - 16
 				positionY = 450
 
@@ -170,7 +171,7 @@
 
 
 				
-
+				//Plateforme centrale
 				positionX = 560 + 16
 				positionY = 235
 
@@ -268,7 +269,7 @@
 
 
 
-				//  Input Events
+				//Commandes du joueur
 				cursors = this.input.keyboard.createCursorKeys();
 
 
@@ -327,12 +328,12 @@
 
 
 				//Le tome a recuperer
-				tomes = this.physics.add.sprite(Phaser.Math.Between(640, 1240), Phaser.Math.Between(150, 600), 'livre', 6);
+				tomes = this.physics.add.sprite(Phaser.Math.Between(640, 1240), Phaser.Math.Between(150, 600), 'livre', 0);
 
 
 
 
-
+				//Animation du rayon du chasseur
 				this.anims.create({
 					key: 'rayonChasseur',
 					frames: this.anims.generateFrameNumbers('rayon', {start: 0, end: 3}),
@@ -343,7 +344,7 @@
 
 
 
-
+				//Creation des chasseurs
 				for(i=0; i<nbChasseur; i++) {
 					var x = Phaser.Math.Between(80, 1200);
 					var y = Phaser.Math.Between(80, 600);
@@ -394,6 +395,7 @@
 				player.anims.play('idleRight');
 				scoreMultiplyer = 1;
 
+				//Musique
 				music = this.sound.add('music', {volume: 0.5});
 				music.loop = true;
 				music.play();
@@ -408,6 +410,7 @@
 
 			function update () {
 
+				//Animation des fantomes
 				for(var i=0; i<fantomes.length; i++) {
 					if(fantomes[i] != undefined) {
 						animFantome(fantomes[i]);
@@ -416,6 +419,8 @@
 					}
 				}
 
+				
+				//Gestion des chasseurs
 				for(i=0; i<chasseurs.length; i++) {
 					if(i%2 == 0) {
 						rayons[i].angle += 1;
@@ -438,6 +443,8 @@
 					}
 				}
 
+				
+				//Animation du tome
 				switch(scoreMultiplyer) {
 					case 1:
 						tomes.anims.play('livreMagique1', true);
@@ -457,10 +464,12 @@
 
 				}
 
+				//Gestion de la jauge d'esprit
 				jaugeEsprit.displayHeight = Math.max(0, ghostLife / 1000 * 150);
 
 				tomes.setVelocityY(-5);
 
+				//Lorsque le joueur n'est pas en fantome
 				if (!gameOver && !inGhost) {
 					if(fond != undefined) {
 						if(fond.alpha > 0) {
